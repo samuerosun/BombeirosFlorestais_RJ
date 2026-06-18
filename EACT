@@ -1,0 +1,132 @@
+#EACT (Escala de Avaliação do Contexto do Trabalho) -  EACT
+#1 Estrutura: possui 27 itens, organizados em três fatores - Organização do Trabalho (OT) - Itens:
+
+itens_organizacao <- c(
+    "eact1",
+    "eact2",
+    "eact3",
+    "eact4",
+    "eact5",
+    "eact6",
+    "eact7",
+    "eact8",
+    "eact9",
+    "eact10",
+    "eact11"
+  ) 
+#Esses itens avaliam: ritmo de trabalho;
+#pressão por resultados; rigidez das normas;
+#fiscalização; divisão do trabalho;
+#repetitividade; pausas insuficientes;
+#descontinuidade das tarefas. Condições de Trabalho (CT)
+
+itens_condicoes <- c(
+  "eact12",
+  "eact13",
+  "eact14",
+  "eact15",
+  "eact16",
+  "eact17",
+  "eact26",
+  "eact27"
+) #Avaliam: ambiente físico; mobiliário; instrumentos; materiais; riscos; espaço físico. Relações Socioprofissionais (RS)
+
+itens_relacoes <- c(
+  "eact18",
+  "eact19",
+  "eact20",
+  "eact21",
+  "eact22",
+  "eact23",
+  "eact24",
+  "eact25"
+) #Avaliam: comunicação; integração; apoio da chefia; acesso às informações;  conflitos.
+
+#. Construção dos indicadores
+library(dplyr)
+dados <- dados %>%
+  mutate(
+    organizacao_trabalho =
+      rowMeans(select(., all_of(itens_organizacao)),
+               na.rm = TRUE),
+    
+    condicoes_trabalho =
+      rowMeans(select(., all_of(itens_condicoes)),
+               na.rm = TRUE),
+    
+    relacoes_socioprofissionais =
+      rowMeans(select(., all_of(itens_relacoes)),
+               na.rm = TRUE),
+    
+    contexto_trabalho =
+      rowMeans(select(.,all_of(c(
+                        itens_organizacao,
+                        itens_condicoes,
+                        itens_relacoes))), 
+               na.rm = TRUE))
+
+#3. Consistência interna
+library(psych)
+alpha(dados[, itens_organizacao])
+alpha(dados[, itens_condicoes])
+alpha(dados[, itens_relacoes])
+alpha(dados[, c(itens_organizacao, itens_condicoes, itens_relacoes)])
+
+#4. Classificação do contexto organizacional. EACT utiliza uma escala de 1 a 5
+dados <- dados %>%
+  mutate(
+    classificacao_contexto =
+      case_when(contexto_trabalho < 2.30 ~ "Baixo",
+                contexto_trabalho >= 2.30 & contexto_trabalho <= 3.69 ~ "Moderado",
+                contexto_trabalho > 3.70 ~ "Elevado"))
+
+#5. Frequencias
+dados %>%
+  count(classificacao_contexto) %>%
+  mutate(
+    percentual =
+      round(n/sum(n)*100,1)
+  )
+
+#6. Estatisticas Descritivas
+dados %>%
+  summarise(
+    
+    media_OT = mean(organizacao_trabalho, na.rm=TRUE),
+    dp_OT = sd(organizacao_trabalho, na.rm=TRUE),
+    
+    media_CT = mean(condicoes_trabalho, na.rm=TRUE),
+    dp_CT = sd(condicoes_trabalho, na.rm=TRUE),
+    
+    media_RS = mean(relacoes_socioprofissionais, na.rm=TRUE),
+    dp_RS = sd(relacoes_socioprofissionais, na.rm=TRUE),
+    
+    media_global = mean(contexto_trabalho, na.rm=TRUE),
+    dp_global = sd(contexto_trabalho, na.rm=TRUE)
+  )
+
+#EACT (Escala de Avaliação do Contexto do Trabalho) -  EACT
+#7. Comparação entre as dimensões
+library(tidyr)
+library(ggplot2)
+#1 Nunca
+#2 Raramente
+#3 Ás vezes
+#4 Frequentemente
+#5 Sempre
+dados_long <- dados %>%
+  select(
+    organizacao_trabalho,
+    condicoes_trabalho,
+    relacoes_socioprofissionais ) %>%
+        pivot_longer(
+          everything(),
+          names_to="Dimensao",
+          values_to="Escore")
+
+ggplot(dados_long,
+       aes(Dimensao,Escore))+
+  geom_boxplot()+
+  theme_minimal()
+
+
